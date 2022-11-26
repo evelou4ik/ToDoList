@@ -43,7 +43,7 @@ function createLi(itemObject) {
     listOfItems.append(newItem);
 }
 
-function checkStatus(status) {
+function checkStatus(status, arr) {
     listOfItems.innerHTML = "";
     for (const item of arr) {
         if (item.status == status) {
@@ -53,6 +53,7 @@ function checkStatus(status) {
 }
 
 btnCreate.addEventListener('click', creatToDoItem);
+
 listOfItems.addEventListener('click', (e) => {
     let target = e.target;
     if (target.classList.contains("btn_complete")) {
@@ -60,11 +61,10 @@ listOfItems.addEventListener('click', (e) => {
         targetLi.classList.add("hidden")
         for (const item of arr) {
             if (Number(targetLi.getAttribute("id")) === item.id && item.status !== "complete") {
-                const newDate = new Date()
+                const date = new Date();
                 item.status = "complete";
-                item.time = Date.parse(newDate);
+                item.time = date;
                 targetLi.querySelector(".time").innerText = item.time.toLocaleString();
-            } else if (Number(targetLi.getAttribute("id")) === item.id && item.status === "complete") {
             } else if (Number(targetLi.getAttribute("id")) === item.id && item.status === "complete") {
                 item.status = "active";
                 item.time = "";
@@ -75,12 +75,12 @@ listOfItems.addEventListener('click', (e) => {
 })
 
 checkComplete.addEventListener("click", () => {
-    checkStatus("complete");
+    checkStatus("complete", arr);
 
 });
 
 checkUnComplete.addEventListener("click", () => {
-    checkStatus("active")
+    checkStatus("active", arr)
 })
 
 checkAll.addEventListener('click', () => {
@@ -91,14 +91,18 @@ checkAll.addEventListener('click', () => {
 })
 
 checkDate.addEventListener('click', () => {
-    const filteredLists = [];
+    let newArray = [];
     for (const item of arr) {
         if (item.status === "complete") {
-            filteredLists.push(item)
+            item.time = Date.parse(item.time)
+            newArray.push(item)
         }
     }
-    console.log(filteredLists)
-    const a = filteredLists.sort((a, b) => a.time - b.time) //------------------ НЕ СОРТИРУЕТ
-    console.log(a)
+    newArray.sort((a, b) => b.time - a.time);
+    listOfItems.innerHTML = "";
+    for (const filtItem of newArray) {
+        filtItem.time = new Date(filtItem.time)
+        createLi(filtItem)
+    }
 })
 
