@@ -1,14 +1,14 @@
 const inputTitle = document.querySelector(".input_title");
 const btnCreate = document.querySelector('.btn_create');
-const checkAll = document.querySelector(".check_all");
-const checkComplete = document.querySelector(".check_complete");
-const checkUnComplete = document.querySelector(".check_uncomplete");
-const checkDate = document.querySelector(".check_date");
+const checkAll = document.querySelector("#checkAll");
+const checkComplete = document.querySelector("#checkComplete");
+const checkUnComplete = document.querySelector("#checkUncomplete");
+const checkByDateOfCreate = document.querySelector("#checkDate");
 const listOfItems = document.querySelector('ul');
 
-const arr = [];
+const toDoItemsObjects = [];
 
-class toDoItem {
+class ToDoItem {
     time = "";
 
     constructor(title, id) {
@@ -18,91 +18,128 @@ class toDoItem {
     }
 }
 
-function creatToDoItem() {
-    const [inputValue, id] = [inputTitle.value, arr.length];
-    const newItemObject = new toDoItem(inputValue, id);
-    createLi(newItemObject)
-    arr.push(newItemObject);
+function changeTextContentForCreateLi(toDoElement, status, textValueFirst, textValueSecond) {
+    return `${toDoElement.status === status ? textValueFirst : textValueSecond}`
 }
 
 function createLi(itemObject) {
     const newItem = document.createElement("LI");
-    newItem.classList.add("item");
+
+    newItem.classList.add("item", itemObject.status);
     newItem.setAttribute("id", `${itemObject.id}`);
     newItem.innerHTML =
         `
-            <div class="item_content">
+            <div class="item_content_top">
                 <span class="title">${itemObject.title}</span>
-                <span class="time">${itemObject.time.toLocaleString()}</span>
+                <span class="time">${changeTextContentForCreateLi(itemObject, "complete", "Время завершения: ", "")} ${itemObject.time.toLocaleString()}</span>
             </div>
-            <div class="item_wrap_btns">
-                <button class="btn btn_complete">Добавить</button>
-                <button class="btn btn_delete">Удалить</button>
+            <div class="item_content_bottom">
+                <div class="item_wrap_btns">
+                    <button class="btn btn_complete">${changeTextContentForCreateLi(itemObject, "active", "Выполнить", "Восстановить")}</button>
+                    <button class="btn btn_delete">Удалить</button>
+                </div>
+                <span>${changeTextContentForCreateLi(itemObject, "complete", "Выполнено", "Не выполнено")}</span>
             </div>
         `;
-    listOfItems.append(newItem);
+
+    newItem.querySelector(".btn_complete").addEventListener("click", () => {
+        newItem.classList.add("hidden");
+        const completeToDoItems = toDoItemsObjects.filter(el => el.status === "active");
+
+        if (completeToDoItems.find(el => el.id === Number(newItem.getAttribute("id")))) {
+            const date = new Date();
+            itemObject.status = "complete";
+            itemObject.time = date;
+            newItem.querySelector(".time").innerText = itemObject.time.toLocaleString();
+
+            hideFilterByDate();
+        } else {
+            itemObject.status = "active";
+            itemObject.time = "";
+            newItem.querySelector(".time").innerText = itemObject.time;
+
+            hideFilterByDate()
+        }
+
+    })
+    newItem.querySelector(".btn_delete").addEventListener("click", () => {
+        newItem.classList.add("hidden");
+
+        if (toDoItemsObjects.find(el => el.id === Number(newItem.getAttribute("id")))) {
+            toDoItemsObjects.splice(itemObject.id)
+            newItem.remove();
+        }
+    })
+    return newItem;
 }
 
-function checkStatus(status, arr) {
-    listOfItems.innerHTML = "";
-    for (const item of arr) {
-        if (item.status == status) {
-            createLi(item)
-        }
+function createToDoItem() {
+    const [inputValue, id] = [inputTitle.value, toDoItemsObjects.length];
+    const inputValueWithoutSpaces = inputValue.trim()
+
+    if (inputValueWithoutSpaces !== "") {
+        const newItemObject = new ToDoItem(inputValue, id);
+
+        const newLi = createLi(newItemObject)
+
+        listOfItems.append(newLi);
+        toDoItemsObjects.push(newItemObject);
+        inputTitle.value = "";
+    }
+
+}
+
+function hideFilterByDate() {
+    if (toDoItemsObjects.filter(el => el.status === "complete").length === 0) {
+        checkByDateOfCreate.closest("label").classList.add("hidden")
+    } else {
+        checkByDateOfCreate.closest("label").classList.remove("hidden")
     }
 }
 
-btnCreate.addEventListener('click', creatToDoItem);
+btnCreate.addEventListener('click', createToDoItem);
 
-listOfItems.addEventListener('click', (e) => {
-    let target = e.target;
-    if (target.classList.contains("btn_complete")) {
-        let targetLi = target.closest("li");
-        targetLi.classList.add("hidden")
-        for (const item of arr) {
-            if (Number(targetLi.getAttribute("id")) === item.id && item.status !== "complete") {
-                const date = new Date();
-                item.status = "complete";
-                item.time = date;
-                targetLi.querySelector(".time").innerText = item.time.toLocaleString();
-            } else if (Number(targetLi.getAttribute("id")) === item.id && item.status === "complete") {
-                item.status = "active";
-                item.time = "";
-                targetLi.querySelector(".time").innerText = item.time;
-            }
-        }
+inputTitle.addEventListener('keypress', (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        createToDoItem();
     }
 })
 
 checkComplete.addEventListener("click", () => {
-    checkStatus("complete", arr);
-
+    listOfItems.innerHTML = "";
+    toDoItemsObjects.filter(el => el.status === "complete").forEach(el => {
+        listOfItems.append(createLi(el));
+    });
 });
 
 checkUnComplete.addEventListener("click", () => {
-    checkStatus("active", arr)
+    listOfItems.innerHTML = "";
+    toDoItemsObjects.filter(el => el.status === "active").forEach(el => {
+        listOfItems.append(createLi(el));
+    });
 })
 
 checkAll.addEventListener('click', () => {
     listOfItems.innerHTML = "";
-    for (const item of arr) {
-        createLi(item);
+    toDoItemsObjects.forEach(el => {
+        listOfItems.append(createLi(el));
+    });
+})
+
+checkByDateOfCreate.addEventListener('click', () => {
+    let newArray = toDoItemsObjects.map(el => el.status === "complete" ? {...el, time: new Date(el.time)} : el);
+
+    newArray.sort((a, b) => b.time - a.time);
+
+    listOfItems.innerHTML = "";
+
+    for (const filtItem of newArray) {
+        let filtereLiByTime = createLi({...filtItem, time: new Date(filtItem.time)});
+        listOfItems.append(filtereLiByTime);
     }
 })
 
-checkDate.addEventListener('click', () => {
-    let newArray = [];
-    for (const item of arr) {
-        if (item.status === "complete") {
-            item.time = Date.parse(item.time)
-            newArray.push(item)
-        }
-    }
-    newArray.sort((a, b) => b.time - a.time);
-    listOfItems.innerHTML = "";
-    for (const filtItem of newArray) {
-        filtItem.time = new Date(filtItem.time)
-        createLi(filtItem)
-    }
-})
+hideFilterByDate()
+
 
