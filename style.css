@@ -19,7 +19,8 @@ input[type='text'] {
     background-color: transparent;
 }
 
-.btn_create {
+.main-btn {
+    margin-right: 1rem;
     padding: 1rem;
     border-color: rgba(0, 0, 0, 0.4);
     border-radius: 1rem;

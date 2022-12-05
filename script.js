@@ -1,12 +1,13 @@
-const inputTitle = document.querySelector(".input_title");
-const btnCreate = document.querySelector('.btn_create');
+const inputTitle = document.querySelector("#input_title");
+const btnCreate = document.querySelector('#btn_create');
+const btnReset = document.querySelector('#btn_reset');
 const checkAll = document.querySelector("#checkAll");
 const checkComplete = document.querySelector("#checkComplete");
 const checkUnComplete = document.querySelector("#checkUncomplete");
 const checkByDateOfCreate = document.querySelector("#checkDate");
 const listOfItems = document.querySelector('ul');
 
-const toDoItemsObjects = [];
+let toDoItemsObjects = [];
 
 class ToDoItem {
     time = "";
@@ -53,12 +54,14 @@ function createLi(itemObject) {
             newItem.querySelector(".time").innerText = itemObject.time.toLocaleString();
 
             hideFilterByDate();
+            saveDataLocalStorage();
         } else {
             itemObject.status = "active";
             itemObject.time = "";
             newItem.querySelector(".time").innerText = itemObject.time;
 
-            hideFilterByDate()
+            hideFilterByDate();
+            saveDataLocalStorage();
         }
 
     })
@@ -84,6 +87,8 @@ function createToDoItem() {
 
         listOfItems.append(newLi);
         toDoItemsObjects.push(newItemObject);
+        saveDataLocalStorage()
+
         inputTitle.value = "";
     }
 
@@ -97,38 +102,62 @@ function hideFilterByDate() {
     }
 }
 
+function saveDataLocalStorage() {
+    localStorage.setItem('listsOfToDo', JSON.stringify(toDoItemsObjects));
+}
+
+function getDataLocalStorage() {
+    const saveListsOfToDo = JSON.parse(localStorage.getItem('listsOfToDo'));
+
+    if (!saveListsOfToDo) return;
+
+    toDoItemsObjects = saveListsOfToDo;
+
+    checkAll.click()
+
+}
+
+function checkAllToDoItems() {
+    listOfItems.innerHTML = "";
+    toDoItemsObjects.forEach(el => {
+        listOfItems.append(createLi(el));
+    });
+}
+
+function checkStatusOfToDoItem(status) {
+    listOfItems.innerHTML = "";
+    toDoItemsObjects.filter(el => el.status === status).forEach(el => listOfItems.append(createLi(el)));
+}
+
+function resetListOfToDo() {
+    localStorage.removeItem("listsOfToDo");
+    location.reload();
+}
+
 btnCreate.addEventListener('click', createToDoItem);
 
 inputTitle.addEventListener('keypress', (e) => {
     if (e.key === "Enter") {
         e.preventDefault();
         createToDoItem();
+        saveDataLocalStorage()
     }
-})
+});
 
 checkComplete.addEventListener("click", () => {
-    listOfItems.innerHTML = "";
-    toDoItemsObjects.filter(el => el.status === "complete").forEach(el => {
-        listOfItems.append(createLi(el));
-    });
+    checkStatusOfToDoItem("complete")
 });
 
 checkUnComplete.addEventListener("click", () => {
-    listOfItems.innerHTML = "";
-    toDoItemsObjects.filter(el => el.status === "active").forEach(el => {
-        listOfItems.append(createLi(el));
-    });
-})
+    checkStatusOfToDoItem("active")
+});
 
-checkAll.addEventListener('click', () => {
-    listOfItems.innerHTML = "";
-    toDoItemsObjects.forEach(el => {
-        listOfItems.append(createLi(el));
-    });
-})
+checkAll.addEventListener('click', checkAllToDoItems);
 
 checkByDateOfCreate.addEventListener('click', () => {
-    let newArray = toDoItemsObjects.map(el => el.status === "complete" ? {...el, time: new Date(el.time)} : el);
+    let newArray = toDoItemsObjects.filter(el => el.status === "complete").map(el => {
+        return {...el, time: new Date(el.time)};
+    });
 
     newArray.sort((a, b) => b.time - a.time);
 
@@ -138,8 +167,15 @@ checkByDateOfCreate.addEventListener('click', () => {
         let filtereLiByTime = createLi({...filtItem, time: new Date(filtItem.time)});
         listOfItems.append(filtereLiByTime);
     }
-})
+});
+
+btnReset.addEventListener("click", resetListOfToDo);
 
 hideFilterByDate()
+
+getDataLocalStorage();
+
+
+
 
 
